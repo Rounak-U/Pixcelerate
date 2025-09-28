@@ -7,17 +7,32 @@ const archiver = require("archiver");
 const cors = require("cors");
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
+
+// --- CORS Setup ---
+const allowedOrigins = [
+  "http://localhost:5173",               // local dev
+  "https://pixcelerate.vercel.app",     // deployed frontend
+];
 
 app.use(cors({
-  origin: "http://localhost:5173",
+  origin: (origin, callback) => {
+    // allow requests with no origin (like Postman) or from allowed origins
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   methods: ["GET", "POST"],
 }));
 
+// --- Ensure directories exist ---
 ["uploads", "processed"].forEach(dir => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
 });
 
+// --- Multer setup ---
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
   filename: (req, file, cb) => cb(null, Date.now() + "_" + file.originalname),
@@ -27,6 +42,7 @@ const upload = multer({ storage }).array("images");
 app.use(express.json());
 app.use("/processed", express.static(path.join(__dirname, "processed")));
 
+// --- Process images ---
 app.post("/process", (req, res) => {
   upload(req, res, (err) => {
     if (err) return res.status(400).json({ error: err.message });
@@ -61,11 +77,13 @@ app.post("/process", (req, res) => {
 
       res.json(urls);
 
+      // Clean uploaded files
       files.forEach(f => fs.unlinkSync(f.path));
     });
   });
 });
 
+// --- Download all processed images ---
 app.get("/download-all", (req, res) => {
   const zipName = "all_processed.zip";
   res.setHeader("Content-Disposition", `attachment; filename=${zipName}`);
@@ -81,4 +99,5 @@ app.get("/download-all", (req, res) => {
   archive.finalize();
 });
 
-app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
+// --- Start server ---
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
