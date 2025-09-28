@@ -10,23 +10,26 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // --- CORS Setup ---
-const allowedOrigins = [        // local dev
-  "https://pixcelerate.vercel.app",     // deployed frontend
+const allowedOrigins = [
+  // local dev
+  "https://pixcelerate.vercel.app", // deployed frontend
 ];
 
-app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  methods: ["GET", "POST"],
-}));
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST"],
+  })
+);
 
 // --- Ensure directories exist ---
-["uploads", "processed"].forEach(dir => {
+["uploads", "processed"].forEach((dir) => {
   if (!fs.existsSync(dir)) fs.mkdirSync(dir);
 });
 
@@ -47,14 +50,11 @@ app.post("/process", (req, res) => {
 
     const files = req.files;
     const { operations } = req.body;
-    if (!files || !operations) return res.status(400).json({ error: "No files or operations" });
+    if (!files || !operations)
+      return res.status(400).json({ error: "No files or operations" });
 
     const ops = JSON.stringify(JSON.parse(operations));
-    const args = [
-      files.length,
-      ops,
-      ...files.map(f => path.resolve(f.path))
-    ];
+    const args = [files.length, ops, ...files.map((f) => path.resolve(f.path))];
 
     const cpp = spawn("./image_processor", args);
 
@@ -63,20 +63,25 @@ app.post("/process", (req, res) => {
       outputPaths = data.toString().trim().split("\n");
     });
 
-    cpp.stderr.on("data", (data) => console.error("C++ Error:", data.toString()));
+    cpp.stderr.on("data", (data) =>
+      console.error("C++ Error:", data.toString())
+    );
 
     cpp.on("close", (code) => {
-      if (code !== 0) return res.status(500).json({ error: "C++ process failed" });
+      if (code !== 0)
+        return res.status(500).json({ error: "C++ process failed" });
 
-      const urls = outputPaths.map(p => ({
+      const urls = outputPaths.map((p) => ({
         name: path.basename(p),
-        url: "/processed/" + path.basename(p), // ✅ Correct URL for frontend
+        url: `${
+          process.env.BACKEND_URL || "https://pixcelerate.onrender.com"
+        }/processed/${path.basename(p)}`,
       }));
 
       res.json({ files: urls }); // ✅ Wrap in 'files' for React
 
       // Clean uploaded files
-      files.forEach(f => fs.unlinkSync(f.path));
+      files.forEach((f) => fs.unlinkSync(f.path));
     });
   });
 });
@@ -90,7 +95,7 @@ app.get("/download-all", (req, res) => {
   const archive = archiver("zip", { zlib: { level: 9 } });
   archive.pipe(res);
 
-  fs.readdirSync("processed").forEach(file => {
+  fs.readdirSync("processed").forEach((file) => {
     archive.file(path.join("processed", file), { name: file });
   });
 
