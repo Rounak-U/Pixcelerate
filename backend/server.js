@@ -17,7 +17,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // allow requests with no origin (like Postman) or from allowed origins
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -51,10 +50,10 @@ app.post("/process", (req, res) => {
     const { operations } = req.body;
     if (!files || !operations) return res.status(400).json({ error: "No files or operations" });
 
-    const ops = JSON.stringify(JSON.parse(operations)); // pass as JSON string
+    const ops = JSON.stringify(JSON.parse(operations));
     const args = [
       files.length,
-      ops, // send all operations as JSON
+      ops,
       ...files.map(f => path.resolve(f.path))
     ];
 
@@ -72,10 +71,10 @@ app.post("/process", (req, res) => {
 
       const urls = outputPaths.map(p => ({
         name: path.basename(p),
-        url: "/" + path.relative(__dirname, p).replace(/\\/g, "/"),
+        url: "/processed/" + path.basename(p), // ✅ Correct URL for frontend
       }));
 
-      res.json(urls);
+      res.json({ files: urls }); // ✅ Wrap in 'files' for React
 
       // Clean uploaded files
       files.forEach(f => fs.unlinkSync(f.path));
