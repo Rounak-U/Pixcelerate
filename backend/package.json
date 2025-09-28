@@ -4,8 +4,8 @@
   "description": "",
   "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "g++ -std=c++17 -fopenmp image_processor.cpp -o image_processor",
+    "start": "node server.js",
+    "build": "g++ -std=c++17 -fopenmp image_processor.cpp -o image_processor && chmod +x image_processor",
     "postinstall": "npm run build"
   },
   "keywords": [],
