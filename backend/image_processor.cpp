@@ -7,7 +7,7 @@
 #include <vector>
 #include <string>
 #include <filesystem>
-#include <nlohmann/json.hpp>
+#include "include/nlohmann/json.hpp"
 #include <omp.h>
 
 using namespace std;
