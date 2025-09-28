@@ -1,0 +1,31 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  width: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #ffffff; /* Tailwind will override if needed */
+  color: #111827; /* Tailwind will override if needed */
+  min-height: 100vh;
+}
+
+/* This is the part that HIDES the scrollbar, while still allowing the page to scroll */
+::-webkit-scrollbar{
+  width: none; /* Modern standard */
+}
+/* ...and this older code ensures maximum compatibility for WebKit browsers like Chrome/Safari */
+::-webkit-scrollbar{
+  width: 0px; 
+}
+::-webkit-scrollbar-button,
+::-webkit-scrollbar-thumb,
+::-webkit-scrollbar-track {
+  /* Setting dimensions to zero effectively hides it */
+  width: 0px;
+  height: 0px;
+}
