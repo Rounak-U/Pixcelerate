@@ -68,15 +68,18 @@ void apply_contrast(unsigned char* data, int w, int h, int channels, double valu
     }
 }
 
+// safer flip using temporary buffer to avoid overwriting pixels
 void apply_flip(unsigned char* data, int w, int h, int channels, bool horizontal, bool vertical) {
-    #pragma omp parallel for collapse(2) schedule(static)
+    vector<unsigned char> temp(data, data + w*h*channels);
+
+    #pragma omp parallel for schedule(static)
     for(int y=0;y<h;y++){
         for(int x=0;x<w;x++){
             int nx = horizontal ? w-1-x : x;
             int ny = vertical ? h-1-y : y;
-            int idx1 = (y*w + x)*channels;
-            int idx2 = (ny*w + nx)*channels;
-            for(int c=0;c<channels;c++) swap(data[idx1+c], data[idx2+c]);
+            int idx_src = (ny*w + nx)*channels;
+            int idx_dst = (y*w + x)*channels;
+            for(int c=0;c<channels;c++) data[idx_dst + c] = temp[idx_src + c];
         }
     }
 }
@@ -104,6 +107,7 @@ int main(int argc, char** argv){
     vector<Operation> operations;
     for(const auto& o: ops_json) operations.push_back({o["type"], o["params"]});
 
+    // ensure "processed" directory exists
     filesystem::create_directories("processed");
 
     #pragma omp parallel for schedule(dynamic)
@@ -111,14 +115,22 @@ int main(int argc, char** argv){
         string file = argv[3+i];
         int w,h,c;
         unsigned char* data = stbi_load(file.c_str(), &w,&h,&c,3);
-        if(!data) continue;
+        if(!data) {
+            #pragma omp critical
+            cerr<<"Failed to load: "<<file<<endl;
+            continue;
+        }
         c=3;
         apply_operations(data,w,h,c,operations);
-        string out = "processed/processed_"+to_string(i)+".png";
+
+        // use absolute path to avoid Express 404 issues
+        string out = filesystem::absolute("processed/processed_" + to_string(i) + ".png").string();
         stbi_write_png(out.c_str(),w,h,c,data,w*c);
         stbi_image_free(data);
+
+        // print **only the filename**, Node.js will prepend /processed/
         #pragma omp critical
-        cout<<out<<endl;
+        cout << "processed_" + to_string(i) + ".png" << endl;
     }
 
     return 0;
