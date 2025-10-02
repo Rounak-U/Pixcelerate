@@ -159,7 +159,8 @@ int main(int argc, char **argv)
         string file = argv[3 + i];
         int w, h, c;
         unsigned char *data = stbi_load(file.c_str(), &w, &h, &c, 3);
-        if (!data) continue;
+        if (!data)
+            continue;
         c = 3;
         apply_operations(data, w, h, c, operations);
         string out = "processed/processed_seq_" + to_string(i) + ".png";
@@ -176,7 +177,8 @@ int main(int argc, char **argv)
         string file = argv[3 + i];
         int w, h, c;
         unsigned char *data = stbi_load(file.c_str(), &w, &h, &c, 3);
-        if (!data) continue;
+        if (!data)
+            continue;
         c = 3;
         apply_operations(data, w, h, c, operations);
         string out = "processed/processed_par_" + to_string(i) + ".png";

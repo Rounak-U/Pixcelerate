@@ -55,7 +55,7 @@ const Process = ({ images = [] }) => {
         { type: "brightness", params: { value: brightness } },
         { type: "contrast", params: { value: contrast } },
       ];
-      if (grayscale) operations.push({ type: "grayscale" , params: {} });
+      if (grayscale) operations.push({ type: "grayscale", params: {} });
       if (invert) operations.push({ type: "invert", params: {} });
 
       formData.append("operations", JSON.stringify(operations));
