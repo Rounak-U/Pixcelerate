@@ -33,7 +33,7 @@ app.post("/process", (req, res) => {
     const ops = JSON.stringify(JSON.parse(operations));
     const args = [files.length, ops, ...files.map(f => path.resolve(f.path))];
 
-    const cpp = spawn("./image_processor", args);
+    const cpp = spawn("./image_processor.exe", args);
 
     let stdoutData = "", stderrData = "";
 
@@ -69,10 +69,10 @@ app.post("/process", (req, res) => {
       if (speedup) console.log(`Speedup: ${speedup.toFixed(2)}x`);
       if (efficiency) console.log(`Efficiency: ${(efficiency * 100).toFixed(1)}%`);
 
-      res.json({ 
-        images: urls, 
-        sequentialTime: seqTime, 
-        parallelTime: parTime, 
+      res.json({
+        images: urls,
+        sequentialTime: seqTime,
+        parallelTime: parTime,
         speedup: speedup ? speedup.toFixed(2) : null,
         efficiency: efficiency ? (efficiency * 100).toFixed(1) : null
       });

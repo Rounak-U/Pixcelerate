@@ -118,7 +118,85 @@ void apply_flip(unsigned char *data, int w, int h, int channels, bool horizontal
     }
 }
 
-void apply_operations(unsigned char *data, int w, int h, int channels, const vector<Operation> &ops)
+// nearest-neighbor resize
+unsigned char *apply_resize(unsigned char *data, int w, int h, int channels, int new_w, int new_h)
+{
+    unsigned char *resized = new unsigned char[new_w * new_h * channels];
+
+#pragma omp parallel for schedule(static)
+    for (int y = 0; y < new_h; y++)
+    {
+        for (int x = 0; x < new_w; x++)
+        {
+            int src_x = x * w / new_w;
+            int src_y = y * h / new_h;
+            int dst_idx = (y * new_w + x) * channels;
+            int src_idx = (src_y * w + src_x) * channels;
+            for (int c = 0; c < channels; c++)
+                resized[dst_idx + c] = data[src_idx + c];
+        }
+    }
+
+    return resized;
+}
+
+// Rotate image by 0, 90, 180, 270 degrees
+unsigned char *apply_rotate(unsigned char *data, int w, int h, int channels, int angle, int &new_w, int &new_h)
+{
+    new_w = w;
+    new_h = h;
+    if (angle == 0)
+        return data;
+
+    unsigned char *rotated;
+    if (angle == 180)
+    {
+        rotated = new unsigned char[w * h * channels];
+#pragma omp parallel for schedule(static)
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                int src_idx = (y * w + x) * channels;
+                int dst_idx = ((h - 1 - y) * w + (w - 1 - x)) * channels;
+                for (int c = 0; c < channels; c++)
+                    rotated[dst_idx + c] = data[src_idx + c];
+            }
+        }
+    }
+    else if (angle == 90 || angle == 270)
+    {
+        rotated = new unsigned char[w * h * channels];
+        new_w = h;
+        new_h = w;
+#pragma omp parallel for schedule(static)
+        for (int y = 0; y < h; y++)
+        {
+            for (int x = 0; x < w; x++)
+            {
+                int src_idx = (y * w + x) * channels;
+                int dst_idx;
+                if (angle == 90)
+                    dst_idx = (x * new_w + (new_w - 1 - y)) * channels;
+                else // 270
+                    dst_idx = ((h - 1 - x) * new_w + y) * channels;
+
+                for (int c = 0; c < channels; c++)
+                    rotated[dst_idx + c] = data[src_idx + c];
+            }
+        }
+    }
+    else
+    {
+        cerr << "Unsupported rotation angle: " << angle << endl;
+        return data;
+    }
+
+    delete[] data;
+    return rotated;
+}
+
+void apply_operations(unsigned char *&data, int &w, int &h, int channels, const vector<Operation> &ops)
 {
     for (const auto &op : ops)
     {
@@ -133,6 +211,19 @@ void apply_operations(unsigned char *data, int w, int h, int channels, const vec
         else if (op.type == "flip")
             apply_flip(data, w, h, channels,
                        op.params["horizontal"], op.params["vertical"]);
+        else if (op.type == "resize")
+        {
+            int new_w = op.params["width"];
+            int new_h = op.params["height"];
+            data = apply_resize(data, w, h, channels, new_w, new_h);
+            w = new_w;
+            h = new_h;
+        }
+        else if (op.type == "rotate")
+        {
+            int angle = op.params["angle"];
+            data = apply_rotate(data, w, h, channels, angle, w, h);
+        }
     }
 }
 
