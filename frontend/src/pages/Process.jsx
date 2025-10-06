@@ -101,10 +101,7 @@ const Process = ({ images = [] }) => {
           variant="h3"
           gutterBottom
           sx={{ fontWeight: "bold", display: "flex", alignItems: "center" }}
-        >
-          <ImageIcon sx={{ mr: 1 }} />
-          Image Processor
-        </Typography>
+        ></Typography>
 
         <Card
           sx={{
